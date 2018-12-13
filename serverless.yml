@@ -1,0 +1,398 @@
+service: souk-api
+
+# Use the serverless-webpack plugin to transpile ES6
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-s3-sync
+
+package:
+  individually: false
+  exclude:
+    - test/**
+    - .git/**
+
+# serverless-webpack configuration
+# Enable auto-packing of external modules
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  memorySize: 1536
+  region: us-west-2
+  cfLogs: true
+  stage: ${opt:stage, 'dev'}
+  environment: ${file(env.yml):${self:provider.stage}}
+
+functions:
+  account:
+    handler: handler.account
+    events:
+      - http:
+          path: account
+          method: ANY
+          cors: true
+      - http:
+          path: account/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-account
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-account lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  auth:
+    handler: handler.auth
+    events:
+      - http:
+          path: auth
+          method: ANY
+          cors: true
+      - http:
+          path: auth/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-auth
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-auth lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  cart:
+    handler: handler.cart
+    events:
+      - http:
+          path: cart
+          method: ANY
+          cors: true
+      - http:
+          path: cart/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-cart
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-cart lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  catalog:
+    handler: handler.catalog
+    events:
+      - http:
+          path: catalog
+          method: ANY
+          cors: true
+      - http:
+          path: catalog/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-catalog
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-catalog lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  contact:
+    handler: handler.contact
+    events:
+      - http:
+          path: contact
+          method: ANY
+          cors: true
+      - http:
+          path: contact/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-contact
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-contact lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  customer:
+    handler: handler.customer
+    events:
+      - http:
+          path: customer
+          method: ANY
+          cors: true
+      - http:
+          path: customer/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-customer
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-customer lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  country:
+    handler: handler.country
+    events:
+      - http:
+          path: country
+          method: ANY
+          cors: true
+      - http:
+          path: country/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-country
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-country lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  coupon:
+    handler: handler.coupon
+    events:
+      - http:
+          path: coupon
+          method: ANY
+          cors: true
+      - http:
+          path: coupon/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-coupon
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-coupon lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  dailyOrders:
+    handler: handler.dailyOrders
+    events:
+      - http:
+          path: daily-orders
+          method: ANY
+          cors: true
+      - http:
+          path: daily-orders/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-dailyOrders
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-dailyOrders lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  discountApplication:
+    handler: handler.discountApplication
+    events:
+      - http:
+          path: discount-application
+          method: ANY
+          cors: true
+      - http:
+          path: discount-application/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-discountApplication
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-discountApplication lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  email:
+    handler: handler.email
+    events:
+      - http:
+          path: email
+          method: ANY
+          cors: true
+      - http:
+          path: email/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-email
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-email lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  shipstationHook:
+    handler: handler.shipstationHook
+    events:
+      - http:
+          path: shipstation-hook
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-shipstationHook
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-shipstationHook lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  order:
+    handler: handler.order
+    events:
+      - http:
+          path: order
+          method: ANY
+          cors: true
+      - http:
+          path: order/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-order
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-order lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  payment:
+    handler: handler.payment
+    events:
+      - http:
+          path: payment
+          method: ANY
+          cors: true
+      - http:
+          path: payment/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-payment
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-payment lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  comment:
+    handler: handler.comment
+    events:
+      - http:
+          path: comment
+          method: ANY
+          cors: true
+      - http:
+          path: comment/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-comment
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-comment lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  reports:
+    handler: handler.reports
+    events:
+      - http:
+          path: reports
+          method: ANY
+          cors: true
+      - http:
+          path: reports/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-reports
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-reports lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  setting:
+    handler: handler.setting
+    events:
+      - http:
+          path: setting
+          method: ANY
+          cors: true
+      - http:
+          path: setting/{proxy+}
+          method: ANY
+          cors: true
+
+  sheets:
+    handler: handler.sheets
+    events:
+      - http:
+          path: sheets
+          method: get
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-sheets
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-sheets lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  shipping:
+    handler: handler.shipping
+    events:
+      - http:
+          path: shipping
+          method: ANY
+          cors: true
+      - http:
+          path: shipping/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-shipping
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-shipping lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  store:
+    handler: handler.store
+    events:
+      - http:
+          path: store
+          method: ANY
+          cors: true
+      - http:
+          path: store/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-store
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-store lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  tax:
+    handler: handler.tax
+    events:
+      - http:
+          path: tax
+          method: ANY
+          cors: true
+      - http:
+          path: tax/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+          name: ${self:service}-${opt:stage, 'dev'}-warm-tax
+          description: Will call the ${self:service}-${opt:stage, 'dev'}-tax lambda each 3 minutes in order to keep the function code warm (ready to run)
+          rate: rate(3 minutes)
+          enabled: true
+
+  user:
+    handler: handler.user
+    events:
+      - http:
+          path: user
+          method: ANY
+          cors: true
+      - http:
+          path: user/{proxy+}
+          method: ANY
+          cors: true
+      - schedule:
+         name: ${self:service}-${opt:stage, 'dev'}-warm-user
+         description: Will call the ${self:service}-${opt:stage, 'dev'}-user lambda each 3 minutes in order to keep the function code warm (ready to run)
+         rate: rate(3 minutes)
+         enabled: true
+
+  cartSweeper:
+    handler: handler.cartSweeper
+    events:
+      - schedule:
+          rate: cron(1 0 * * ? *)
+          timezone: America/Los_Angeles

@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Souk API Logs Stack
+
+Parameters:
+  Environment:
+    Type: String
+    Description: The environment name for the stack
+    AllowedValues:
+    - development
+    - staging
+    - production
+
+Mappings:
+
+  Settings:
+    development:
+      RetentionInDays: 7
+    staging:
+      RetentionInDays: 7
+    production:
+      RetentionInDays: 14
+
+Resources:
+
+  AccountLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-account
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  AuthLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-auth
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CartLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-cart
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CatalogLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-catalog
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CountryLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-country
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CustomerLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-customer
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  DailyOrdersLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-dailyOrders
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  EmailLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-email
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  ShipstationHookLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-shipstationHook
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  OrderLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-order
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  PaymentLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-payment
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CommentLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-comment
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  ReportsLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-reports
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  SheetsLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-sheets
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  ShippingLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-shipping
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  TaxLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-tax
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  UserLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-user
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  SettingLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-setting
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  StoreLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-store
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CustomersSyncLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-customers-sync
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+  CartSweeperLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Environment}-souk-api-cartSweeper
+      RetentionInDays: !FindInMap [Settings, !Ref Environment, RetentionInDays]
+
+Outputs:
+  LogGroupsPrefix:
+    Description: Clout Watch log groups prefix for all functions
+    Value: !Sub /aws/lambda/${Environment}-souk-api-

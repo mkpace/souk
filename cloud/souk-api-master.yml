@@ -1,0 +1,243 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Souk API master stack
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: Environment Parameters
+      Parameters:
+      - Environment
+    - Label:
+        default: Deployment Parameters
+      Parameters:
+      - BuildTag
+
+Parameters:
+
+  Environment:
+    Type: String
+    Description: The environment name for the stack
+    AllowedValues:
+    - development
+    - staging
+    - production
+
+  BuildTag:
+    Type: String
+    Description: The BuildTag (the Timestamp generates by Jenkins) used to construct the S3 Paths of deployment zips
+    MaxLength: 2048
+    MinLength: 4
+
+Mappings:
+  Settings:
+    development:
+      Domain: dev.souk.com
+      MediaCertificateArn: arn:aws:acm:us-east-1:116904957498:certificate/52ce48a7-516a-455a-876f-58a1e8d6ad19
+    staging:
+      Domain: stage.souk.com
+      MediaCertificateArn: arn:aws:acm:us-east-1:116904957498:certificate/52ff7fbd-ca42-4c50-8b73-4449ac8484f0
+    production:
+      Domain: souk.com
+      MediaCertificateArn: arn:aws:acm:us-east-1:589885826646:certificate/246ee3c7-ef95-4503-b902-6fa70229cbe2
+
+Resources:
+
+  CloudWatchLogs:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${Environment}-cftemplates-souk/${Environment}-souk-api/souk-api-logs.yml
+      Parameters:
+        Environment: !Ref Environment
+
+  MediaBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub ${Environment}-media-souk
+      AccessControl: Private
+      CorsConfiguration:
+        CorsRules:
+        - AllowedOrigins:
+          - !Sub
+            - https://*.${DomainName}
+            - DomainName: !FindInMap [Settings, !Ref Environment, Domain]
+          AllowedHeaders: ["Authorization"]
+          AllowedMethods: ["GET", "HEAD"]
+          MaxAge: 3000
+
+  MediaOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: To be used for accessing media files from S3
+
+  MediaBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    DependsOn: MediaOriginAccessIdentity
+    Properties:
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement:
+        - Sid: CloudFrontOriginAccessIdentityReadForGetBucketObjects
+          Effect: Allow
+          Principal:
+            AWS: !Sub arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${MediaOriginAccessIdentity}
+          Action: 's3:GetObject'
+          Resource: !Sub "arn:aws:s3:::${MediaBucket}/*"
+      Bucket: !Ref MediaBucket
+
+  MediaDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !GetAtt MediaBucket.DomainName
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${MediaOriginAccessIdentity}
+          Id: MediaS3Origin
+        Enabled: 'true'
+        Comment: Souk media S3 bucket
+        Aliases:
+        - !Sub
+          - media.${DomainName}
+          - DomainName: !FindInMap [Settings, !Ref Environment, Domain]
+        DefaultCacheBehavior:
+          AllowedMethods: ["GET", "HEAD", "OPTIONS"]
+          CachedMethods: ["GET", "HEAD", "OPTIONS"]
+          TargetOriginId: MediaS3Origin
+          SmoothStreaming: 'false'
+          Compress: 'true'
+          ForwardedValues:
+            QueryString: 'false'
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !FindInMap [Settings, !Ref Environment, MediaCertificateArn]
+          SslSupportMethod: sni-only
+
+  MediaDNSEntry:
+    Type: "AWS::Route53::RecordSet"
+    DependsOn:
+      - MediaDistribution
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt MediaDistribution.DomainName
+        EvaluateTargetHealth: false
+        HostedZoneId: Z2FDTNDATAQYW2
+      HostedZoneId: !ImportValue
+        'Fn::Sub': ${Environment}SoukComHostedZone
+      Name: !Sub
+        - media.${DomainName}
+        - DomainName: !FindInMap [Settings, !Ref Environment, Domain]
+      Type: A
+
+#  ApiElasticSearchDomain:
+#    Type: 'AWS::Elasticsearch::Domain'
+#    Properties:
+#      DomainName: !Sub ${Environment}-souk-api
+#      ElasticsearchVersion: 6.3
+#      ElasticsearchClusterConfig:
+#        DedicatedMasterEnabled: false
+#        InstanceCount: 1
+#        ZoneAwarenessEnabled: false
+#        InstanceType: t2.small.elasticsearch
+#      EBSOptions:
+#        EBSEnabled: true
+#        Iops: 0
+#        VolumeSize: 10
+#        VolumeType: gp2
+#      SnapshotOptions:
+#        AutomatedSnapshotStartHour: 0
+#      AccessPolicies:
+#        Version: "2012-10-17"
+#        Statement:
+#          - Effect: "Allow"
+#            Principal:
+#              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+#            Action: "es:*"
+#            Resource: !Sub 'arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${Environment}-souk-api/*'
+#      AdvancedOptions:
+#        rest.action.multi.allow_explicit_index: true
+
+  IamRoleLambdaExecution:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - 'sts:AssumeRole'
+      Policies:
+      - PolicyName: !Sub ${Environment}-souk-api-lambda-policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'logs:PutLogEvents'
+            - 'logs:CreateLogStream'
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Environment}-souk-api-*:*
+          - Effect: Allow
+            Action:
+            - 's3:*'
+            Resource: !Sub "arn:aws:s3:::${MediaBucket}/*"
+          - Effect: Allow
+            Action:
+            - 'es:*'
+            Resource: !Sub 'arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${Environment}-souk-api/*'
+          - Effect: Allow
+            Action:
+            - "xray:PutTraceSegments"
+            - "xray:PutTelemetryRecords"
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - 'ssm:GetParameter'
+            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/souk-api/${Environment}/env.cfg'
+      Path: /
+      RoleName: !Sub ${Environment}-souk-api-lambdaRole
+
+  LambdaStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: CloudWatchLogs
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${Environment}-cftemplates-souk/${Environment}-souk-api/souk-api-lambda.yml
+      Parameters:
+        Environment: !Ref Environment
+        IamRoleLambdaExecutionArn: !GetAtt IamRoleLambdaExecution.Arn
+        S3DeployBucket: !Sub ${Environment}-deployments-souk
+        S3DeployPath: !Sub ${Environment}-souk-api/${BuildTag}
+        DomainName: !FindInMap [Settings, !Ref Environment, Domain]
+        HostedZoneID: !ImportValue
+          'Fn::Sub': ${Environment}SoukComHostedZone
+
+Outputs:
+
+  ServiceEndpoint:
+    Description: URL of the API service endpoint
+    Value: !GetAtt LambdaStack.Outputs.ServiceEndpoint
+
+  MediaBucket:
+    Description: Bucket used to store media files for Souk
+    Value: !Ref MediaBucket
+
+  MediaBaseUrl:
+    Description: Base URL for media files
+    Value: !Sub
+      - https://media.${DomainName}/
+      - DomainName: !FindInMap [Settings, !Ref Environment, Domain]
+
+#  ApiElasticSearchEndpoint:
+#    Description: Endpoint of the Elasti Search Domain used by Api service
+#    Value: !Sub
+#      - https://${Endpoint}
+#      - Endpoint: !GetAtt ApiElasticSearchDomain.DomainEndpoint
+
+  ConfigurationPath:
+    Description: The path of the SSM Parameter that holds the configuration for this environment (Please create it)
+    Value: !Sub /souk-api/${Environment}/env.cfg

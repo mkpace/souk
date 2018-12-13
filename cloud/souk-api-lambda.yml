@@ -1,0 +1,4058 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Souk API Lambda Stack
+
+Parameters:
+  Environment:
+    Type: String
+    Description: The environment name for the stack
+    AllowedValues:
+    - development
+    - staging
+    - production
+
+  S3DeployBucket:
+    Type: String
+    Description: The S3 Bucket containing the deployment zips
+    MaxLength: 256
+    MinLength: 4
+
+  S3DeployPath:
+    Type: String
+    Description: The S3 Paths where deployment zips can be found
+    MaxLength: 2048
+    MinLength: 4
+
+  DomainName:
+    Type: String
+    Description: The domain name under which to create the api name
+
+  HostedZoneID:
+    Type: String
+    Description: The Route 53 Hosted Zone ID of teh Domain on which to create the new api DNS record
+
+  IamRoleLambdaExecutionArn:
+    Type: String
+    Description: Arn of the IAMRole for Lambda Execution
+  
+  MemorySize:
+    Type: String
+    Description: The ammount of memory allocated for lambda functions
+    Default: 1536
+
+Mappings:
+  Settings:
+    development:
+      CertificateArn: arn:aws:acm:us-east-1:116904957498:certificate/52ce48a7-516a-455a-876f-58a1e8d6ad19
+
+    staging:
+      CertificateArn: arn:aws:acm:us-east-1:116904957498:certificate/df07b538-5431-4cec-b256-2d53fed1a197
+
+    production:
+      CertificateArn: arn:aws:acm:us-east-1:589885826646:certificate/dc18ba14-a394-4ed3-b9e3-9532e219a2c7
+Conditions:
+  IsNotDevelopment: !Not [!Equals [ "development", !Ref Environment ]]
+  IsStaging: !Equals [ "staging", !Ref Environment ]
+
+Resources:
+
+  ApiLambdaCodeLayer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      CompatibleRuntimes:
+        - nodejs8.10
+      Content:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/Souk-api-common.zip
+      Description: Common code layer for all Souk API Lambdas
+      LayerName: !Sub ${Environment}-souk-api-common-layer
+
+  AccountLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-account
+      Handler: handler.account
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  AuthLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-auth
+      Handler: handler.auth
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CartLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-cart
+      Handler: handler.cart
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CatalogLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-catalog
+      Handler: handler.catalog
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CustomerLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-customer
+      Handler: handler.customer
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CountryLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-country
+      Handler: handler.country
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  DailyOrdersLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-dailyOrders
+      Handler: handler.dailyOrders
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  EmailLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-email
+      Handler: handler.email
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  ShipstationHookLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-shipstationHook
+      Handler: handler.shipstationHook
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  OrderLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-order
+      Handler: handler.order
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 300
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  PaymentLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-payment
+      Handler: handler.payment
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CommentLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-comment
+      Handler: handler.comment
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  ReportsLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-reports
+      Handler: handler.reports
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  SheetsLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-sheets
+      Handler: handler.sheets
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  ShippingLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-shipping
+      Handler: handler.shipping
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  TaxLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-tax
+      Handler: handler.tax
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  UserLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-user
+      Handler: handler.user
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  SettingLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-setting
+      Handler: handler.setting
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  StoreLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-store
+      Handler: handler.store
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 30
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CustomersSyncLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Condition: IsNotDevelopment
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-customers-sync
+      Handler: handler.customerSync
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 600
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  LambdaApiEventsRuleScheduleCustomersSync:
+    Type: 'AWS::Events::Rule'
+    Condition: IsNotDevelopment
+    Properties:
+      ScheduleExpression: cron(0 0 * * ? *)
+      State: ENABLED
+      Name: !Sub ${Environment}-souk-api-customers-sync
+      Description: !Sub Will call ${Environment}-souk-api-customers-sync lambda daily at 00:00AM UTC
+      Targets:
+      - Arn: !GetAtt CustomersSyncLambdaFunction.Arn
+        Id: customersSync
+  CustomersSyncLambdaPermissionEventsRuleSchedule:
+    Type: 'AWS::Lambda::Permission'
+    Condition: IsNotDevelopment
+    Properties:
+      FunctionName: !GetAtt CustomersSyncLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleCustomersSync.Arn
+  CartSweeperLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Ref S3DeployBucket
+        S3Key: !Sub ${S3DeployPath}/souk-api-functions.zip
+      Layers:
+        - !Ref ApiLambdaCodeLayer
+      FunctionName: !Sub ${Environment}-souk-api-cartSweeper
+      Handler: handler.cartSweeper
+      MemorySize: !Ref MemorySize
+      Role: !Ref IamRoleLambdaExecutionArn
+      Runtime: nodejs8.10
+      Timeout: 600
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub /souk-api/${Environment}/env.cfg
+  CartSweeperLambdaApiEventsRuleSchedule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: cron(0 8 * * ? *)
+      State: ENABLED
+      Name: !Sub ${Environment}-souk-api-cartSweeper
+      Description: !Sub Will call ${Environment}-souk-api-cartSweeper lambda daily at 08:00AM UTC
+      Targets:
+      - Arn: !GetAtt CartSweeperLambdaFunction.Arn
+        Id: cartSweeper
+  CartSweeperLambdaPermissionEventsRuleSchedule:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CartSweeperLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt CartSweeperLambdaApiEventsRuleSchedule.Arn
+  LambdaApiEventsRuleScheduleWarmPart1:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: rate(3 minutes)
+      State: ENABLED
+      Name: !Sub ${Environment}-souk-api-warm-part1
+      Description: !Sub Will call part of ${Environment}-souk-api-* lambdas each 3 minutes in order to keep their function code warm (ready to run)
+      Targets:
+        - Arn: !GetAtt AccountLambdaFunction.Arn
+          Id: accountSchedule
+        - Arn: !GetAtt AuthLambdaFunction.Arn
+          Id: authSchedule
+        - Arn: !GetAtt CartLambdaFunction.Arn
+          Id: cartSchedule
+        - Arn: !GetAtt CatalogLambdaFunction.Arn
+          Id: catalogSchedule
+        - Arn: !GetAtt CustomerLambdaFunction.Arn
+          Id: customerSchedule
+  LambdaApiEventsRuleScheduleWarmPart2:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: rate(3 minutes)
+      State: ENABLED
+      Name: !Sub ${Environment}-souk-api-warm-part2
+      Description: !Sub Will call part of ${Environment}-souk-api-* lambdas each 3 minutes in order to keep their function code warm (ready to run)
+      Targets:
+        - Arn: !GetAtt DailyOrdersLambdaFunction.Arn
+          Id: dailyOrdersSchedule
+        - Arn: !GetAtt EmailLambdaFunction.Arn
+          Id: emailSchedule
+        - Arn: !GetAtt ShipstationHookLambdaFunction.Arn
+          Id: shipstationHookSchedule
+        - Arn: !GetAtt OrderLambdaFunction.Arn
+          Id: orderSchedule
+        - Arn: !GetAtt PaymentLambdaFunction.Arn
+          Id: paymentSchedule
+  LambdaApiEventsRuleScheduleWarmPart3:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: rate(3 minutes)
+      State: ENABLED
+      Name: !Sub ${Environment}-souk-api-warm-part3
+      Description: !Sub Will call part of ${Environment}-souk-api-* lambdas each 3 minutes in order to keep their function code warm (ready to run)
+      Targets:
+        - Arn: !GetAtt CommentLambdaFunction.Arn
+          Id: commentSchedule
+        - Arn: !GetAtt ReportsLambdaFunction.Arn
+          Id: reportsSchedule
+        - Arn: !GetAtt SheetsLambdaFunction.Arn
+          Id: sheetsSchedule
+        - Arn: !GetAtt ShippingLambdaFunction.Arn
+          Id: shippingSchedule
+        - Arn: !GetAtt TaxLambdaFunction.Arn
+          Id: taxSchedule
+  LambdaApiEventsRuleScheduleWarmPart4:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: rate(3 minutes)
+      State: ENABLED
+      Name: !Sub ${Environment}-souk-api-warm-part4
+      Description: !Sub Will call part of ${Environment}-souk-api-* lambdas each 3 minutes in order to keep their function code warm (ready to run)
+      Targets:
+        - Arn: !GetAtt UserLambdaFunction.Arn
+          Id: userSchedule
+        - Arn: !GetAtt CountryLambdaFunction.Arn
+          Id: countrySchedule
+        - Arn: !GetAtt SettingLambdaFunction.Arn
+          Id: settingSchedule
+        - Arn: !GetAtt StoreLambdaFunction.Arn
+          Id: storeSchedule
+  AccountLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt AccountLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart1.Arn
+  AuthLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt AuthLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart1.Arn
+  CartLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CartLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart1.Arn
+  CatalogLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CatalogLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart1.Arn
+  CustomerLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CustomerLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart1.Arn
+  DailyOrdersLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt DailyOrdersLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart2.Arn
+  EmailLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt EmailLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart2.Arn
+  ShipstationHookLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ShipstationHookLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart2.Arn
+  OrderLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt OrderLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart2.Arn
+  PaymentLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt PaymentLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart2.Arn
+  CommentLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CommentLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart3.Arn
+  ReportsLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ReportsLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart3.Arn
+  SheetsLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt SheetsLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart3.Arn
+  ShippingLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ShippingLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart3.Arn
+  TaxLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt TaxLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart3.Arn
+  UserLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt UserLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart4.Arn
+  CountryLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CountryLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart4.Arn
+  SettingLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt SettingLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart4.Arn
+  StoreLambdaPermissionEventsRuleScheduleWarm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt StoreLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub events.${AWS::URLSuffix}
+      SourceArn: !GetAtt LambdaApiEventsRuleScheduleWarmPart4.Arn
+  ApiGatewayRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub ${Environment}-souk-api
+      EndpointConfiguration:
+        Types:
+          - EDGE
+  ApiGatewayResourceAccount:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: account
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceAccountProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceAccount
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceAuth:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: auth
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceAuthProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceAuth
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCart:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: cart
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCartProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceCart
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCatalog:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: catalog
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCatalogProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceCatalog
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCustomer:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: customer
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCustomerProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceCustomer
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCountry:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: country
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCountryProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceCountry
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceDailyDashorders:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: daily-orders
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceDailyDashordersProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceDailyDashorders
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceEmail:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: email
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceEmailProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceEmail
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceShipstationDashhook:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: shipstation-hook
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceOrder:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: order
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceOrderProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceOrder
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourcePayment:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: payment
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourcePaymentProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourcePayment
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceComment:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: comment
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceCommentProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceComment
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceReports:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: reports
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceReportsProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceReports
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceSheets:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: sheets
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceShipping:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: shipping
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceShippingProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceShipping
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceTax:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: tax
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceTaxProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceTax
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceUser:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: user
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceUserProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceUser
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceSetting:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: setting
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceSettingProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceSetting
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceStore:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: store
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceStoreProxyVar:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !Ref ApiGatewayResourceStore
+      PathPart: '{proxy+}'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodAccountOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceAccount
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodAccountProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceAccountProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodAuthOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceAuth
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodAuthProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceAuthProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCartOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCart
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCartProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCartProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCatalogOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCatalog
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCatalogProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCatalogProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCustomerOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCustomer
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCustomerProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCustomerProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCountryOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+      - StatusCode: '200'
+        ResponseParameters:
+          method.response.header.Access-Control-Allow-Origin: true
+          method.response.header.Access-Control-Allow-Headers: true
+          method.response.header.Access-Control-Allow-Methods: true
+          method.response.header.Access-Control-Allow-Credentials: true
+        ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: '''*'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+            method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+            method.response.header.Access-Control-Allow-Credentials: '''false'''
+          ResponseTemplates:
+            application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCountry
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCountryProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+      - StatusCode: '200'
+        ResponseParameters:
+          method.response.header.Access-Control-Allow-Origin: true
+          method.response.header.Access-Control-Allow-Headers: true
+          method.response.header.Access-Control-Allow-Methods: true
+          method.response.header.Access-Control-Allow-Credentials: true
+        ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: '''*'''
+            method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+            method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+            method.response.header.Access-Control-Allow-Credentials: '''false'''
+          ResponseTemplates:
+            application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCountryProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodDailyDashordersOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceDailyDashorders
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodDailyDashordersProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceDailyDashordersProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodEmailOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceEmail
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodEmailProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceEmailProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodShipstationDashhookOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceShipstationDashhook
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodOrderOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceOrder
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodOrderProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceOrderProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodPaymentOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourcePayment
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodPaymentProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourcePaymentProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCommentOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceComment
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodCommentProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceCommentProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodReportsOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceReports
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodReportsProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceReportsProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodSheetsOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,GET'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceSheets
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodShippingOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceShipping
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodShippingProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceShippingProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodTaxOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceTax
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodTaxProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceTaxProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodUserOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceUser
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodUserProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceUserProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodSettingOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceSetting
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodSettingProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceSettingProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodStoreOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceStore
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodStoreProxyVarOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: '200'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Credentials: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{statusCode:200}'
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'''
+              method.response.header.Access-Control-Allow-Methods: '''OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Credentials: '''false'''
+            ResponseTemplates:
+              application/json: ''
+      ResourceId: !Ref ApiGatewayResourceStoreProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodAccountAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceAccount
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt AccountLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodAccountProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceAccountProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt AccountLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodAuthAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceAuth
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt AuthLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodAuthProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceAuthProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt AuthLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCartAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCart
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CartLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCartProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCartProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CartLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCatalogAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCatalog
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CatalogLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCatalogProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCatalogProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CatalogLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCustomerAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCustomer
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CustomerLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCustomerProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCustomerProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CustomerLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCountryAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCountry
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CountryLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCountryProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCountryProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CountryLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodDailyDashordersAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceDailyDashorders
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt DailyOrdersLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodDailyDashordersProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceDailyDashordersProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt DailyOrdersLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodEmailAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceEmail
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt EmailLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodEmailProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceEmailProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt EmailLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodShipstationDashhookAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceShipstationDashhook
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt ShipstationHookLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodOrderAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceOrder
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt OrderLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodOrderProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceOrderProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt OrderLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodPaymentAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourcePayment
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt PaymentLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodPaymentProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourcePaymentProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt PaymentLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCommentAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceComment
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CommentLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodCommentProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceCommentProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt CommentLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodReportsAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceReports
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt ReportsLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodReportsProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceReportsProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt ReportsLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodSheetsGet:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: GET
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceSheets
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt SheetsLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodShippingAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceShipping
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt ShippingLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodShippingProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceShippingProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt ShippingLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodTaxAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceTax
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt TaxLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodTaxProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceTaxProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt TaxLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodUserAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceUser
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt UserLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodUserProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceUserProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt UserLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodSettingAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceSetting
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt SettingLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodSettingProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceSettingProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt SettingLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodStoreAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceStore
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt StoreLambdaFunction.Arn
+      MethodResponses: []
+  ApiGatewayMethodStoreProxyVarAny:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: ANY
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceStoreProxyVar
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ThisLambdaFunctionArn}/invocations
+          - ThisLambdaFunctionArn: !GetAtt StoreLambdaFunction.Arn
+      MethodResponses: []
+  # ApiGatewayDeployment name has to be updated when you add/remove/modify any AWS::ApiGateway::Method
+  # otherwise it won't reflect the changes
+  ApiGatewayDeployment2018121001:
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: !Ref Environment
+    DependsOn:
+      - ApiGatewayMethodAccountOptions
+      - ApiGatewayMethodAccountProxyVarOptions
+      - ApiGatewayMethodAuthOptions
+      - ApiGatewayMethodAuthProxyVarOptions
+      - ApiGatewayMethodCartOptions
+      - ApiGatewayMethodCartProxyVarOptions
+      - ApiGatewayMethodCatalogOptions
+      - ApiGatewayMethodCatalogProxyVarOptions
+      - ApiGatewayMethodCustomerOptions
+      - ApiGatewayMethodCustomerProxyVarOptions
+      - ApiGatewayMethodCountryOptions
+      - ApiGatewayMethodCountryProxyVarOptions
+      - ApiGatewayMethodDailyDashordersOptions
+      - ApiGatewayMethodDailyDashordersProxyVarOptions
+      - ApiGatewayMethodEmailOptions
+      - ApiGatewayMethodEmailProxyVarOptions
+      - ApiGatewayMethodShipstationDashhookOptions
+      - ApiGatewayMethodOrderOptions
+      - ApiGatewayMethodOrderProxyVarOptions
+      - ApiGatewayMethodPaymentOptions
+      - ApiGatewayMethodPaymentProxyVarOptions
+      - ApiGatewayMethodCommentOptions
+      - ApiGatewayMethodCommentProxyVarOptions
+      - ApiGatewayMethodReportsOptions
+      - ApiGatewayMethodReportsProxyVarOptions
+      - ApiGatewayMethodSheetsOptions
+      - ApiGatewayMethodShippingOptions
+      - ApiGatewayMethodShippingProxyVarOptions
+      - ApiGatewayMethodTaxOptions
+      - ApiGatewayMethodTaxProxyVarOptions
+      - ApiGatewayMethodUserOptions
+      - ApiGatewayMethodUserProxyVarOptions
+      - ApiGatewayMethodSettingOptions
+      - ApiGatewayMethodSettingProxyVarOptions
+      - ApiGatewayMethodStoreOptions
+      - ApiGatewayMethodStoreProxyVarOptions
+      - ApiGatewayMethodAccountAny
+      - ApiGatewayMethodAccountProxyVarAny
+      - ApiGatewayMethodAuthAny
+      - ApiGatewayMethodAuthProxyVarAny
+      - ApiGatewayMethodCartAny
+      - ApiGatewayMethodCartProxyVarAny
+      - ApiGatewayMethodCatalogAny
+      - ApiGatewayMethodCatalogProxyVarAny
+      - ApiGatewayMethodCustomerAny
+      - ApiGatewayMethodCustomerProxyVarAny
+      - ApiGatewayMethodCountryAny
+      - ApiGatewayMethodCountryProxyVarAny
+      - ApiGatewayMethodDailyDashordersAny
+      - ApiGatewayMethodDailyDashordersProxyVarAny
+      - ApiGatewayMethodEmailAny
+      - ApiGatewayMethodEmailProxyVarAny
+      - ApiGatewayMethodShipstationDashhookAny
+      - ApiGatewayMethodOrderAny
+      - ApiGatewayMethodOrderProxyVarAny
+      - ApiGatewayMethodPaymentAny
+      - ApiGatewayMethodPaymentProxyVarAny
+      - ApiGatewayMethodCommentAny
+      - ApiGatewayMethodCommentProxyVarAny
+      - ApiGatewayMethodReportsAny
+      - ApiGatewayMethodReportsProxyVarAny
+      - ApiGatewayMethodSheetsGet
+      - ApiGatewayMethodShippingAny
+      - ApiGatewayMethodShippingProxyVarAny
+      - ApiGatewayMethodTaxAny
+      - ApiGatewayMethodTaxProxyVarAny
+      - ApiGatewayMethodUserAny
+      - ApiGatewayMethodUserProxyVarAny
+      - ApiGatewayMethodSettingAny
+      - ApiGatewayMethodSettingProxyVarAny
+      - ApiGatewayMethodStoreAny
+      - ApiGatewayMethodStoreProxyVarAny
+  AccountLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt AccountLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  AuthLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt AuthLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  CartLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CartLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  CatalogLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CatalogLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  CustomerLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CustomerLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  CountryLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CountryLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  DailyOrdersLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt DailyOrdersLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  EmailLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt EmailLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  ShipstationHookLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ShipstationHookLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  OrderLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt OrderLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  PaymentLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt PaymentLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  CommentLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt CommentLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  ReportsLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ReportsLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  SheetsLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt SheetsLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  ShippingLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ShippingLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  TaxLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt TaxLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  UserLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt UserLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  SettingLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt SettingLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  StoreLambdaPermissionApiGateway:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt StoreLambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Sub apigateway.${AWS::URLSuffix}
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*
+  CustomApiGatewayDomain:
+    Type: "AWS::ApiGateway::DomainName"
+    Properties:
+      CertificateArn: !FindInMap [Settings, !Ref Environment, CertificateArn]
+      DomainName: !Sub api.${DomainName}
+      EndpointConfiguration:
+        Types:
+          - EDGE
+
+  CustomApiGatewayDomainBasePathMapping:
+    Type: "AWS::ApiGateway::BasePathMapping"
+    DependsOn:
+      - CustomApiGatewayDomain
+    Properties:
+      DomainName: !Ref CustomApiGatewayDomain
+      RestApiId: !Ref ApiGatewayRestApi
+      Stage: !Ref Environment
+
+  CustomApiGatewayDomainDNSEntry:
+    Type: "AWS::Route53::RecordSet"
+    DependsOn:
+      - CustomApiGatewayDomain
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt CustomApiGatewayDomain.DistributionDomainName
+        EvaluateTargetHealth: false
+        HostedZoneId: !GetAtt CustomApiGatewayDomain.DistributionHostedZoneId
+      HostedZoneId: !Ref HostedZoneID
+      Name: !Sub api.${DomainName}
+      Type: A
+
+  HighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsNotDevelopment
+    Properties:
+      AlarmDescription: Alarm for slow responses, less then 99% of requests are handled in under 3s.
+      Namespace: AWS/ApiGateway
+      MetricName: Latency
+      ExtendedStatistic: p99
+      Period: 60
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 3000
+      Unit: Milliseconds
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub ${Environment}-souk-api
+
+  FunctionsDetect5xxErrorAlarm1:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Function 5xx Error detection alarm 1.
+      Metrics:
+        - Id: account
+          Label: account
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-account
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: False
+        - Id: auth
+          Label: auth
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-auth
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: cart
+          Label: cart
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-cart
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: catalog
+          Label: catalog
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-catalog
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: comment
+          Label: comment
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-comment
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: country
+          Label: country
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-country
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: customer
+          Label: customer
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-customer
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: dailyOrders
+          Label: dailyOrders
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-dailyOrders
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: email
+          Label: email
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-email
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: order
+          Label: order
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-order
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: max
+          Label: max
+          Expression: MAX([account,auth,cart,catalog,comment,country,customer,dailyOrders,email,order])
+          ReturnData: True
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+  FunctionsDetect5xxErrorAlarm2:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Function 5xx Error detection alarm 2.
+      Metrics:
+        - Id: payment
+          Label: payment
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-payment
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: reports
+          Label: reports
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-reports
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: sheets
+          Label: sheets
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-sheets
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: shipping
+          Label: shipping
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-shipping
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: shipstationHook
+          Label: shipstationHook
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-shipstationHook
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: tax
+          Label: tax
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-tax
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: user
+          Label: user
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-user
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: setting
+          Label: setting
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-setting
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: store
+          Label: store
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub ${Environment}-souk-api-store
+            Period: 300
+            Stat: SampleCount
+            Unit: Count
+          ReturnData: false
+        - Id: max
+          Label: max
+          Expression: MAX([payment,reports,sheets,shipping,shipstationHook,tax,user,setting,store])
+          ReturnData: True
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+  FunctionsAvailabilityAlarm1:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Function availability alarm 1.
+      Metrics:
+        - Id: accounte
+          Label: accounte
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-account
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: accounti
+          Label: accounti
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-account
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: accountavailability
+          Label: accountavailability
+          Expression: 100-100*accounte/accounti
+          ReturnData: false
+        - Id: authe
+          Label: authe
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-auth
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: authi
+          Label: authi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-auth
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: authavailability
+          Label: authavailability
+          Expression: 100-100*authe/authi
+          ReturnData: false
+        - Id: carte
+          Label: carte
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-cart
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: carti
+          Label: carti
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-cart
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: cartavailability
+          Label: cartavailability
+          Expression: 100-100*carte/carti
+          ReturnData: false
+        - Id: cataloge
+          Label: cataloge
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-catalog
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: catalogi
+          Label: catalogi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-catalog
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: catalogavailability
+          Label: catalogavailability
+          Expression: 100-100*cataloge/catalogi
+          ReturnData: false
+        - Id: commente
+          Label: commente
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-comment
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: commenti
+          Label: commenti
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-comment
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: commentavailability
+          Label: commentavailability
+          Expression: 100-100*commente/commenti
+          ReturnData: false
+        - Id: minavailability
+          Label: minavailability
+          Expression: MIN([accountavailability,authavailability,cartavailability,catalogavailability,commentavailability])
+          ReturnData: true
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanThreshold
+      Threshold: 99
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+  FunctionsAvailabilityAlarm2:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Function availability alarm 2.
+      Metrics:
+        - Id: countrye
+          Label: countrye
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-country
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: countryi
+          Label: countryi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-country
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: countryavailability
+          Label: countryavailability
+          Expression: 100-100*countrye/countryi
+          ReturnData: false
+        - Id: customere
+          Label: customere
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-customer
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: customeri
+          Label: customeri
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-customer
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: customeravailability
+          Label: customeravailability
+          Expression: 100-100*customere/customeri
+          ReturnData: false
+        - Id: dailyOrderse
+          Label: dailyOrderse
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-dailyOrders
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: dailyOrdersi
+          Label: dailyOrdersi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-dailyOrders
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: dailyOrdersavailability
+          Label: dailyOrdersavailability
+          Expression: 100-100*dailyOrderse/dailyOrdersi
+          ReturnData: false
+        - Id: emaile
+          Label: emaile
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-email
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: emaili
+          Label: emaili
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-email
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: emailavailability
+          Label: emailavailability
+          Expression: 100-100*emaile/emaili
+          ReturnData: false
+        - Id: ordere
+          Label: ordere
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-order
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: orderi
+          Label: orderi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: \!Sub ${Environment}-souk-api-order
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: orderavailability
+          Label: orderavailability
+          Expression: 100-100*ordere/orderi
+          ReturnData: false
+        - Id: minavailability
+          Label: minavailability
+          Expression: MIN([countryavailability,customeravailability,dailyOrdersavailability,emailavailability,orderavailability])
+          ReturnData: true
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanThreshold
+      Threshold: 99
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+  FunctionsAvailabilityAlarm3:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Function availability alarm 3.
+      Metrics:
+        - Id: paymente
+          Label: paymente
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-payment
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: paymenti
+          Label: paymenti
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-payment
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: paymentavailability
+          Label: paymentavailability
+          Expression: 100-100*paymente/paymenti
+          ReturnData: false
+        - Id: reportse
+          Label: reportse
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-reports
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: reportsi
+          Label: reportsi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-reports
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: reportsavailability
+          Label: reportsavailability
+          Expression: 100-100*reportse/reportsi
+          ReturnData: false
+        - Id: sheetse
+          Label: reportse
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-sheets
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: sheetsi
+          Label: sheetsi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-sheets
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: sheetsavailability
+          Label: sheetsavailability
+          Expression: 100-100*sheetse/sheetsi
+          ReturnData: false
+        - Id: shippinge
+          Label: shippinge
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-shipping
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: shippingi
+          Label: shippingi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-shipping
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: shippingavailability
+          Label: shippingavailability
+          Expression: 100-100*shippinge/shippingi
+          ReturnData: false
+        - Id: shipstationHooke
+          Label: shipstationHooke
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-shipstationHook
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: shipstationHooki
+          Label: shipstationHooki
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-shipstationHook
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: shipstationHookavailability
+          Label: shipstationHookavailability
+          Expression: 100-100*shipstationHooke/shipstationHooki
+          ReturnData: false
+        - Id: minavailability
+          Label: minavailability
+          Expression: MIN([paymentavailability,reportsavailability,sheetsavailability,shippingavailability,shipstationHookavailability])
+          ReturnData: true
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanThreshold
+      Threshold: 99
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+
+  FunctionsAvailabilityAlarm4:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Function availability alarm 4.
+      Metrics:
+
+        - Id: taxe
+          Label: taxe
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-tax
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: taxi
+          Label: taxi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-tax
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: taxavailability
+          Label: taxavailability
+          Expression: 100-100*taxe/taxi
+          ReturnData: false
+        - Id: usere
+          Label: usere
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-user
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: useri
+          Label: useri
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-user
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: useravailability
+          Label: useravailability
+          Expression: 100-100*usere/useri
+          ReturnData: false
+        - Id: settinge
+          Label: settinge
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-setting
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: settingi
+          Label: settingi
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-setting
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: settingavailability
+          Label: settingavailability
+          Expression: 100-100*settinge/settingi
+          ReturnData: false
+        - Id: storee
+          Label: storee
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-store
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: storei
+          Label: storei
+          MetricStat:
+            Metric:
+              MetricName: Invocations
+              Namespace: AWS/Lambda
+              Dimensions:
+              - Name: FunctionName
+                Value: !Sub ${Environment}-souk-api-store
+            Period: 300
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: storeavailability
+          Label: storeavailability
+          Expression: 100-100*storee/storei
+          ReturnData: false
+        - Id: minavailability
+          Label: minavailability
+          Expression: MIN([taxavailability,useravailability, settingavailability,storeavailability])
+          ReturnData: true
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanThreshold
+      Threshold: 99
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+  FunctionsDurationAlarm1:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsNotDevelopment
+    Properties:
+      AlarmDescription: Function Duration exeeded 3s in more than 1% alarm 1.
+      Metrics:
+        - Id: account
+          Label: account
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-account
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: False
+        - Id: auth
+          Label: auth
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-auth
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: cart
+          Label: cart
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-cart
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: catalog
+          Label: catalog
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-catalog
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: comment
+          Label: comment
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-comment
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: country
+          Label: country
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-country
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: customer
+          Label: customer
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-customer
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: dailyOrders
+          Label: dailyOrders
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-dailyOrders
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: email
+          Label: email
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-email
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: order
+          Label: order
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-order
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: max
+          Label: max
+          Expression: MAX([account,auth,cart,catalog,comment,country,customer,dailyOrders,email,order])
+          ReturnData: True
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 3000
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+  FunctionsDurationAlarm2:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsNotDevelopment
+    Properties:
+      AlarmDescription: Function Duration exeeded 3s in more than 1% alarm 2.
+      Metrics:
+        - Id: payment
+          Label: payment
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-payment
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: reports
+          Label: reports
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-reports
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: sheets
+          Label: sheets
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-sheets
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: shipping
+          Label: shipping
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-shipping
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: shipstationHook
+          Label: shipstationHook
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-shipstationHook
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: tax
+          Label: tax
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-tax
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: user
+          Label: user
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-user
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: setting
+          Label: setting
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-setting
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: store
+          Label: store
+          MetricStat:
+            Metric:
+              MetricName: Duration
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub ${Environment}-souk-api-store
+            Period: 60
+            Stat: p99
+            Unit: Milliseconds
+          ReturnData: false
+        - Id: max
+          Label: max
+          Expression: MAX([payment,reports,sheets,shipping,shipstationHook,tax,user,setting,store])
+          ReturnData: True
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 3000
+      TreatMissingData: 'notBreaching'
+      AlarmActions:
+        - !ImportValue
+          'Fn::Sub': Souk-${Environment}SupportSNS
+
+Outputs:
+  ServiceEndpoint:
+    Description: URL of the API service endpoint
+    Value: !Sub https://api.${DomainName}/

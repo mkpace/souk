@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Souk Email Notification</title>
+
+  <style type="text/css">
+    #outlook a {padding:0;}
+    .ExternalClass {width:100%;}
+    .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div {line-height: 100%;}
+    table td {border-collapse: collapse;}
+    table {border-collapse: collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    
+    img {display: block; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;}
+    a img {border: none;}
+    .logo {width: 150px;}
+    td.content, td.header {padding: 20px;}
+    .header {border-bottom: solid 1px #134518;}
+    .top-bar {background-color:#134518; height:20px; width: 100%;}
+    .footer {background-color:#134518; height:40px; width: 100%;padding-left: 20px;}
+    .footer a {color:white; text-decoration:none;}
+    .primary-color {color:#134518;}
+    .info-color {color:#3498db;}
+    .border-wrap {border-top:solid 1px #e1e1e1;border-bottom:solid 1px #e1e1e1;padding:15px 0;}
+  </style>
+</head>
+<body style="width:100%; margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
+  <table cellpadding="0" cellspacing="0" border="0" style="margin: 0;padding: 0;width: 100%;line-height: 100% !important;border-collapse: collapse;mso-table-lspace: 0pt;mso-table-rspace: 0pt;">
+    <tr>
+      <td class="top-bar" style="border-collapse: collapse;background-color: #134518;height: 20px;width: 100%;"></td>
+    </tr>
+    <tr>
+      <td class="header" style="border-collapse: collapse;border-bottom: solid 1px #134518;padding: 20px;">
+        <a href="{{FRONT_BASE_URL}}"><img src="{{SOUK_BUCKET_LINK}}/logo.png" alt="Souk Logo" class="logo" style="display: block;outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;border: none;width: 150px;"></a>
+      </td>
+    </tr>
+    <tr>
+      <td class="content" style="border-collapse: collapse;padding: 20px;">
+        {{{content}}}
+      </td>
+    </tr>
+    <tr>
+      <td class="footer" valign="middle" style="border-collapse: collapse;background-color: #134518;height: 40px;width: 100%;padding-left: 20px;">
+        <a href="{{FRONT_BASE_URL}}/contact-us" style="color: white;text-decoration: none;">Contact Us</a>
+      </td>
+    </tr>
+  </table>  
+</body>
+</html>
