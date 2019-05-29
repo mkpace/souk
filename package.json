@@ -11,7 +11,7 @@
     "serve": "serverless offline start",
     "test": "mocha --opts mocha.opts"
   },
-  "author": "Mark Pace<mpace@nuveminc.com> Joel Alejandro Genes<joel_genes91@yahoo.com>",
+  "author": "Mark Pace<mpace@nuveminc.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
