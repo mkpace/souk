@@ -2,6 +2,7 @@
 
 ## Overview
 This project is the result of searching for an Open Source solution that would fulfill the following requirements:
+You can read my post on headless eCommerce on [Medium](https://medium.com/@mpace/a-serverless-ecommerce-soluti-14a8407cc944?sk=64311d7dbf244f7101bb4cf20ac8f1a9).
 
 ### Ideal System Requirements
 1. Headless
