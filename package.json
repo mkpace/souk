@@ -67,7 +67,7 @@
     "lodash": "^4.17.10",
     "mocha": "^5.2.0",
     "moment": "^2.22.2",
-    "mongoose": "^5.2.5",
+    "mongoose": "^5.7.5",
     "nodemailer": "^4.6.7",
     "nodemailer-mailgun-transport": "^1.4.0",
     "nodemailer-stub": "^1.0.1",
