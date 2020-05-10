@@ -1,5 +1,7 @@
 # SOUK - The Headless Microservice API for eCommerce (Alpha)
 
+[![GitHub license](https://img.shields.io/github/license/mkpace/souk)](https://github.com/mkpace/souk/blob/master/LICENSE)
+
 ## Overview
 This project is the result of searching for an Open Source solution that would fulfill the following requirements:
 You can read my post on headless eCommerce on [Medium](https://medium.com/@mpace/a-serverless-ecommerce-soluti-14a8407cc944?sk=64311d7dbf244f7101bb4cf20ac8f1a9).
