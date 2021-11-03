@@ -81,7 +81,7 @@
     "source-map-support": "^0.4.18",
     "supertest": "^3.3.0",
     "url-match": "^0.1.0",
-    "validator": "^10.4.0",
+    "validator": "^13.7.0",
     "winston": "^3.1.0",
     "woocommerce-api": "^1.4.2",
     "xml2js": "^0.4.19"
